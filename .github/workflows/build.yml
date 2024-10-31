@@ -1,0 +1,30 @@
+name: Build
+on:
+  push:
+    branches:
+    - f.*
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps: 
+      - name: Download Code
+        uses: actions/checkout@4
+
+      - name: Install DotNet
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version 8.0.x
+
+      - name: Compile Code
+        run: |
+          cd ISC-AutoLoader
+          ls
+          dotnet clean
+          dotnet restore ISC-AutoLoader.sln
+          dotnet publish ISC-AutoLoader.sln -- source ./ --configuration release --property WarningLevel=0
+          
+      - name: Publish Code
+        uses: actions/upload-artifact@v4
+        with:
+          name: Release
+          path: ./ISC-AutoLoader/ISC-AutoLoader/bin

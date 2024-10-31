@@ -396,3 +396,6 @@ FodyWeavers.xsd
 
 # JetBrains Rider
 *.sln.iml
+
+#Launcher Settings
+ISC-AutoLoader/ISC-AutoLoader/Properties/launchSettings.json

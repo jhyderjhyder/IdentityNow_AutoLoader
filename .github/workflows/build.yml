@@ -19,7 +19,7 @@ jobs:
           ls
           dotnet clean
           dotnet restore ISC-AutoLoader.sln
-          dotnet publish ISC-AutoLoader.sln -p:PublishSingleFile=true --self-contained false --source ./ --configuration release --property WarningLevel=0
+          dotnet publish ISC-AutoLoader.sln -r win-x64 -p:PublishSingleFile=true --self-contained false --source ./ --configuration release --property WarningLevel=0
           
       - name: Publish Code
         uses: actions/upload-artifact@v4

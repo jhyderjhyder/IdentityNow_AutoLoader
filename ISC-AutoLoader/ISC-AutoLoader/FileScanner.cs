@@ -20,9 +20,10 @@ namespace ISC_AutoLoader
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
         {
 
-            runNumber++;
+            
             while (!stoppingToken.IsCancellationRequested)
             {
+                runNumber++;
                 foreach (String appName in masterApps.Keys)
                 {
                     String folder = _userInputs.getStartingFolder() + "/" + appName;
@@ -57,21 +58,34 @@ namespace ISC_AutoLoader
             Console.WriteLine(result.IsSuccessStatusCode);
             String now = DateTime.Now.ToString("yyyy-MM-dd--hh--mm");
             String fileName = Path.GetFileName(file);
-            String logName = root + "/response/" + now + ".log";
-            var logWriter = new System.IO.StreamWriter(logName,true);
-            logWriter.WriteLine(result.Content);
-            logWriter.Flush();
-            logWriter.Close();
-            if (result.IsSuccessStatusCode)
+       
+            if (_userInputs.shouldArchive() == true)
             {
-                
-                String locationNew = root + "/success/" + now + "_" + fileName;
-                File.Move(file, locationNew);
+                String logName = root + "/response/" + now + ".log";
+                var logWriter = new System.IO.StreamWriter(logName, true);
+                logWriter.WriteLine(result.Content);
+                logWriter.Flush();
+                logWriter.Close();
+                if (result.IsSuccessStatusCode)
+                {
+
+                    String locationNew = root + "/success/" + now + "_" + fileName;
+                    File.Move(file, locationNew);
+                }
+                else
+                {
+                    String locationNew = root + "/failure/" + now + "_" + fileName;
+                    File.Move(file, locationNew);
+                }
             }
             else
             {
-                String locationNew = root + "/failure/" + now + "_" +fileName;
-                File.Move(file, locationNew);
+                String logName = root + "/response/trace.log";
+                var logWriter = new System.IO.StreamWriter(logName, true);
+                logWriter.WriteLine(now + ":processed:" + file + ":status_code:" + result.StatusCode);
+                logWriter.Flush();
+                logWriter.Close();
+                File.Delete(file);
             }
 
 

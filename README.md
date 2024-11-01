@@ -29,6 +29,9 @@ You just need to define a few user variables. And DotNot Core 8x.  Remember this
 
 ![alt text](images/1.1.png)
 
+## Optional
+If you dont want to keep the history of all the files uploaded simply create a text file called noArchive.txt in the root of your starting folder and the system will just save a trace.log inside the response folder of the source. 
+
 ## Validate
 Before making this a windows service run locally to see how it works.  Just run the .exe command and you can see the processes and figure out if you have any issues such as network access issues.
 

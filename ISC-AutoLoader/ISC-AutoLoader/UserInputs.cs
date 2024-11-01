@@ -20,5 +20,17 @@ namespace ISC_AutoLoader
         public String getClientId() { return client_id;}
         public String getClientSecret() { return client_secret;}
         public String getStartingFolder() {  return startingFolder;}
+
+        public Boolean shouldArchive()
+        {
+            if (File.Exists(getStartingFolder()+ "/noArchive.txt"))
+            {
+                return false;
+            }
+            else
+            {
+                return true;
+            }
+        }
     }
 }

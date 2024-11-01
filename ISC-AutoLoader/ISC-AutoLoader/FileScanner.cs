@@ -1,12 +1,5 @@
 ﻿using Microsoft.Extensions.Hosting;
-using Newtonsoft.Json.Linq;
 using RestSharp;
-using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace ISC_AutoLoader
 {
@@ -44,48 +37,59 @@ namespace ISC_AutoLoader
         }
 
         private void processOneFile(String file, String appID, String root){
-            OAuth oAuth = new OAuth();
-            //client.DefaultRequestHeaders.Add("Authorization", "Bearer " + oAuth.getNewToken());
-            var url = _userInputs.getUrl() + "/beta/sources/" + appID +"/load-accounts";
-            Console.WriteLine(url);
-            RestClient client = new RestClient(new RestClientOptions(url));
-            RestRequest request = new RestRequest(url, Method.Post);
-            request.AddHeader("Authorization", "Bearer " + oAuth.getNewToken());
-            request.AlwaysMultipartFormData = true;
-            request.AddFile("file", file);
-            RestResponse result = client.ExecuteAsync(request).Result;
-            
-            Console.WriteLine(result.IsSuccessStatusCode);
-            String now = DateTime.Now.ToString("yyyy-MM-dd--hh--mm");
-            String fileName = Path.GetFileName(file);
-       
-            if (_userInputs.shouldArchive() == true)
+            try
             {
-                String logName = root + "/response/" + now + ".log";
-                var logWriter = new System.IO.StreamWriter(logName, true);
-                logWriter.WriteLine(result.Content);
-                logWriter.Flush();
-                logWriter.Close();
-                if (result.IsSuccessStatusCode)
-                {
+                OAuth oAuth = new OAuth();
+                //client.DefaultRequestHeaders.Add("Authorization", "Bearer " + oAuth.getNewToken());
+                var url = _userInputs.getUrl() + "/beta/sources/" + appID + "/load-accounts";
+                Console.WriteLine(url);
+                RestClient client = new RestClient(new RestClientOptions(url));
+                RestRequest request = new RestRequest(url, Method.Post);
+                request.AddHeader("Authorization", "Bearer " + oAuth.getNewToken());
+                request.AlwaysMultipartFormData = true;
+                request.AddFile("file", file);
+                RestResponse result = client.ExecuteAsync(request).Result;
 
-                    String locationNew = root + "/success/" + now + "_" + fileName;
-                    File.Move(file, locationNew);
+                Console.WriteLine(result.IsSuccessStatusCode);
+                String now = DateTime.Now.ToString("yyyy-MM-dd--hh--mm");
+                String fileName = Path.GetFileName(file);
+
+                if (_userInputs.shouldArchive() == true)
+                {
+                    String logName = root + "/response/" + now + ".log";
+                    StreamWriter logWriter = new StreamWriter(logName, true);
+                    logWriter.WriteLine(result.Content);
+                    logWriter.Flush();
+                    logWriter.Close();
+                    if (result.IsSuccessStatusCode)
+                    {
+
+                        String locationNew = root + "/success/" + now + "_" + fileName;
+                        File.Move(file, locationNew);
+                    }
+                    else
+                    {
+                        String locationNew = root + "/failure/" + now + "_" + fileName;
+                        File.Move(file, locationNew);
+                    }
                 }
                 else
                 {
-                    String locationNew = root + "/failure/" + now + "_" + fileName;
-                    File.Move(file, locationNew);
+                    String logName = root + "/response/trace.log";
+                    StreamWriter logWriter = new StreamWriter(logName, true);
+                    logWriter.WriteLine(now + ":processed:" + file + ":status_code:" + result.StatusCode);
+                    logWriter.Flush();
+                    logWriter.Close();
+                    File.Delete(file);
                 }
-            }
-            else
+            //Catch random issues like file being locked
+            }catch(Exception ex)
             {
-                String logName = root + "/response/trace.log";
-                var logWriter = new System.IO.StreamWriter(logName, true);
-                logWriter.WriteLine(now + ":processed:" + file + ":status_code:" + result.StatusCode);
+                String logName = _userInputs.getStartingFolder() + "/error.log";
+                StreamWriter logWriter = new System.IO.StreamWriter(logName, true);
+                logWriter.WriteLine(ex.ToString());
                 logWriter.Flush();
                 logWriter.Close();
-                File.Delete(file);
             }
 
 

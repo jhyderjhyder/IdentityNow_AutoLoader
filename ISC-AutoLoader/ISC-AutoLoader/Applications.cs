@@ -32,7 +32,7 @@ namespace ISC_AutoLoader
             client.DefaultRequestHeaders.Add("Authorization", "Bearer " + token);
             int start = 0;
 
-            
+            List<String> limit = ui.limitList();
             while (start< max)
             {
                 var url = ui.getUrl() + "/v3/sources/" + "?limit=2&count=true&offset=" + start;
@@ -44,7 +44,21 @@ namespace ISC_AutoLoader
                     //TODO should we have more than this or a filter?
                     if (app.type.Equals("DelimitedFile"))
                     {
-                        apps.Add(app.name, app.id);
+                        if (limit.Count == 0) {
+                            if (!apps.ContainsKey(app.name))
+                            {
+                                apps.Add(app.name, app.id);
+                            }
+
+                        }
+                        else
+                        {
+                            if (!apps.ContainsKey(app.name) && limit.Contains(app.name))
+                            {
+                                apps.Add(app.name, app.id);
+                            }
+                        }
+                        
                     }
                     start++;
                 }

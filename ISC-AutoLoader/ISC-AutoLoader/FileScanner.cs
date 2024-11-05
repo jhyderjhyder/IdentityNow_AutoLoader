@@ -13,7 +13,8 @@ namespace ISC_AutoLoader
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
         {
 
-            
+            int scanPerSecound = _userInputs.scanPerSecond();
+
             while (!stoppingToken.IsCancellationRequested)
             {
                 runNumber++;
@@ -30,60 +31,115 @@ namespace ISC_AutoLoader
                 }
 
                 //https://devrel-ga-13054.api.identitynow-demo.com/beta/sources/0e1fcbb123cb4424a16db0f1af9fb526/load-accounts
-                int secoundsToDelay = 1000 * 60;
+                int secoundsToDelay = ((1000) * scanPerSecound) ;
                 Console.WriteLine("Processed run #" + runNumber);
                 await Task.Delay(secoundsToDelay, stoppingToken);
             }
         }
-
-        private void processOneFile(String file, String appID, String root){
+        /// <summary>
+        /// This is where the main functionality is found
+        /// </summary>
+        /// <param name="file">FULL filePath</param>
+        /// <param name="appID">Id number of the application</param>
+        /// <param name="root"> Folder to start containing the root + the applicationName </param>
+        private void processOneFile(String file, String appID, String root)
+        {
+            Boolean skip = false;
             try
             {
-                OAuth oAuth = new OAuth();
-                //client.DefaultRequestHeaders.Add("Authorization", "Bearer " + oAuth.getNewToken());
-                var url = _userInputs.getUrl() + "/beta/sources/" + appID + "/load-accounts";
-                Console.WriteLine(url);
-                RestClient client = new RestClient(new RestClientOptions(url));
-                RestRequest request = new RestRequest(url, Method.Post);
-                request.AddHeader("Authorization", "Bearer " + oAuth.getNewToken());
-                request.AlwaysMultipartFormData = true;
-                request.AddFile("file", file);
-                RestResponse result = client.ExecuteAsync(request).Result;
-
-                Console.WriteLine(result.IsSuccessStatusCode);
-                String now = DateTime.Now.ToString("yyyy-MM-dd--hh--mm");
                 String fileName = Path.GetFileName(file);
-
-                if (_userInputs.shouldArchive() == true)
+                String extention = Path.GetExtension(file);
+                Console.WriteLine("Extention:" + extention);
+                if (extention == null)
                 {
-                    String logName = root + "/response/" + now + ".log";
-                    StreamWriter logWriter = new StreamWriter(logName, true);
-                    logWriter.WriteLine(result.Content);
-                    logWriter.Flush();
-                    logWriter.Close();
-                    if (result.IsSuccessStatusCode)
+                    extention = "txt";
+                }
+                String test = (file.Substring(0, file.Length - extention.Length));
+                Console.WriteLine("checking for file::::" + test);
+                
+                //Check to see this is lock file to let us know that it needs to be skiped
+                if (extention.Equals(".lck") || extention.Equals(".lock"))
+                {
+                    skip = true;
+                }
+                else
+                {
+                    //Good file to upload lets make sure there is not a lock file in the folder so that we should skip
+                    //as the owner is currently writting the file
+                   
+                    if (File.Exists(test + ".lck"))
                     {
+                        skip = true;
+                    }
+                    if (File.Exists(test + ".lock"))
+                    {
+                        skip = true;
+                    }
+                }
 
-                        String locationNew = root + "/success/" + now + "_" + fileName;
-                        File.Move(file, locationNew);
+                //TODO any way to check if the file is open?
+                if (skip == false)
+                {
+                    OAuth oAuth = new OAuth();
+                    //client.DefaultRequestHeaders.Add("Authorization", "Bearer " + oAuth.getNewToken());
+                    String oper = "/load-accounts";
+                    if (Path.GetFileNameWithoutExtension(file).ToLower().ToString().StartsWith("ent-"))
+                    {
+                        oper = "/load-entitlements";
+                        Console.WriteLine("Loading Entitlements data");
+                    }
+
+                    var url = _userInputs.getUrl() + "/beta/sources/" + appID + oper;
+                    Console.WriteLine(url);
+                    RestClient client = new RestClient(new RestClientOptions(url));
+                    
+                    RestRequest request = new RestRequest(url, Method.Post);
+                    //TODO timeout;
+                    request.AddHeader("Authorization", "Bearer " + oAuth.getNewToken());
+                    request.AlwaysMultipartFormData = true;
+                    request.AddFile("file", file);
+                    RestResponse result = client.ExecuteAsync(request).Result;
+
+                    Console.WriteLine(result.IsSuccessStatusCode);
+                    String now = DateTime.Now.ToString("yyyy-MM-dd--hh--mm");
+
+                    if (_userInputs.shouldArchive() == true)
+                    {
+                        String logName = root + "/response/" + now + ".log";
+                        StreamWriter logWriter = new StreamWriter(logName, true);
+                        logWriter.WriteLine(result.Content);
+                        logWriter.Flush();
+                        logWriter.Close();
+                        if (result.IsSuccessStatusCode)
+                        {
+
+                            String locationNew = root + "/success/" + now + "_" + fileName;
+                            File.Move(file, locationNew);
+                        }
+                        else
+                        {
+                            String locationNew = root + "/failure/" + now + "_" + fileName;
+                            File.Move(file, locationNew);
+                        }
                     }
                     else
                     {
-                        String locationNew = root + "/failure/" + now + "_" + fileName;
-                        File.Move(file, locationNew);
+                        String logName = root + "/response/trace.log";
+                        StreamWriter logWriter = new StreamWriter(logName, true);
+                        logWriter.WriteLine(now + ":processed:" + file + ":status_code:" + result.StatusCode);
+                        logWriter.Flush();
+                        logWriter.Close();
+                        File.Delete(file);
                     }
                 }
                 else
                 {
-                    String logName = root + "/response/trace.log";
-                    StreamWriter logWriter = new StreamWriter(logName, true);
-                    logWriter.WriteLine(now + ":processed:" + file + ":status_code:" + result.StatusCode);
-                    logWriter.Flush();
-                    logWriter.Close();
-                    File.Delete(file);
+                    Console.WriteLine("File should be skiped for now");
                 }
+            }
             //Catch random issues like file being locked
-            }catch(Exception ex)
+
+            catch (Exception ex)
             {
                 String logName = _userInputs.getStartingFolder() + "/error.log";
                 StreamWriter logWriter = new System.IO.StreamWriter(logName, true);
@@ -108,20 +164,21 @@ namespace ISC_AutoLoader
             if (_userInputs.getStartingFolder() == null)
             {
                 Console.WriteLine("ISC_FOLDER is required");
-               
+
             }
             if (!Directory.Exists(_userInputs.getStartingFolder()))
             {
                 throw new Exception("Folder not found:" + _userInputs.getStartingFolder());
             }
         }
-        public FileScanner() {
+        public FileScanner()
+        {
             validate();
             OAuth auth = new OAuth();
             String token = auth.getNewToken();
             Console.WriteLine($"{token}");
             Applications apps = new Applications(token);
-            
+
             foreach (String key in apps.apps.Keys)
             {
                 masterApps.Add(key, apps.apps[key]);
@@ -140,7 +197,7 @@ namespace ISC_AutoLoader
                 }
             }
 
-        
+
         }
     }
 }

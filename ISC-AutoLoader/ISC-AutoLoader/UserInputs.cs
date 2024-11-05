@@ -4,12 +4,45 @@ namespace ISC_AutoLoader
 {
     public class UserInputs
     {
-        public UserInputs() { }
+        public UserInputs() {
+            String configFile = this.startingFolder + "/config.ini";
+            if (File.Exists(configFile))
+            {
+                var data = File.ReadLines(configFile);
+                foreach (String line in data)
+                {
+                    if (!line.StartsWith("#") && line.Contains("="))
+                    {
+                        var lineData = line.Split('=');
+                        if (lineData.Length <= 2){
+                            String key = lineData[0].Trim();
+                            String value = lineData[1];
+                            if (!config.ContainsKey(key))
+                            {
+                                config.Add(key, value);
+                            }
+                        }
+                    }
+                        
+                        
+                }
+            }
+            else
+            {
+                StreamWriter logWriter = new StreamWriter(configFile, true);
+                logWriter.WriteLine("# Optional Configuration");
+                logWriter.WriteLine("archive=true");
+                logWriter.Flush();
+                logWriter.Close();
+            }
+        
+        }
 
         private String url = Environment.GetEnvironmentVariable("ISC_URL");
         private String client_id = Environment.GetEnvironmentVariable("ISC_CLIENT_ID");
         private String client_secret = Environment.GetEnvironmentVariable("ISC_CLIENT_SECRET");
         private String startingFolder = Environment.GetEnvironmentVariable("ISC_FOLDER");
+        public Dictionary<String,String> config = new Dictionary<String,String>();
 
         //TODO extra validation
         public String getUrl(){return "https://" + url;}
@@ -19,14 +52,65 @@ namespace ISC_AutoLoader
 
         public Boolean shouldArchive()
         {
-            if (File.Exists(getStartingFolder()+ "/noArchive.txt"))
+            if (config.ContainsKey("archive"))
             {
-                return false;
+                String details = config["archive"];
+                if (details.ToLower().Equals("false"))
+                {
+                    return false;
+                }
             }
-            else
-            {
                 return true;
-            }
+            
         }
+        public int scanPerSecond()
+        {
+            if (config.ContainsKey("delayScanPerSecond"))
+            {
+                try
+                {
+                    String details = config["delayScanPerSecond"];
+                    int result = Int32.Parse(details);
+                    return result;
+                }
+                catch(Exception e)
+                {
+                    Console.WriteLine(e.ToString());
+                }
+               
+            }
+            
+             
+            return 60;
+        }
+
+        public List<String> limitList()
+        {
+            List<String> list = new List<String>();
+            if (config.ContainsKey("limitList"))
+            {
+                try
+                {
+                    String details = config["limitList"];
+                    var apps = details.Split(",");
+                    foreach (String app in apps)
+                    {
+                        var test  = app.Trim();
+                        if (!list.Contains(test))
+                        {
+                            list.Add(test);
+                        }
+                    }
+                    return list;
+                }
+                catch (Exception e)
+                {
+                    Console.WriteLine(e.ToString());
+                }
+
+            }
+            return list;
+        }
+
     }
 }

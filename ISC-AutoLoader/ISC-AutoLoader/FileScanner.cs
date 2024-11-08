@@ -1,12 +1,14 @@
 ﻿using Microsoft.Extensions.Hosting;
 using RestSharp;
+using System.Collections;
+using System.Management.Automation;
 
 namespace ISC_AutoLoader
 {
     public class FileScanner : BackgroundService
     {
         public UserInputs _userInputs = new UserInputs();
-
+        private String commandsFolder = "/commands";
         private Dictionary<String, String> masterApps = new Dictionary<String, String>();
         private String[] resultFolders = { "success", "failure", "response" };
         private int runNumber = 0;
@@ -20,19 +22,25 @@ namespace ISC_AutoLoader
                 runNumber++;
                 foreach (String appName in masterApps.Keys)
                 {
-                    String folder = _userInputs.getStartingFolder() + "/" + appName;
+                    String folder = _userInputs.getStartingFolder() + "\\" + appName;
                     Console.WriteLine(folder);
                     string[] files = Directory.GetFiles(folder);
                     foreach (String fileName in files)
                     {
                         Console.WriteLine("Proccess:" + fileName);
-                        processOneFile(fileName, masterApps[appName], folder);
+                        processOneFile(fileName, masterApps[appName], folder, appName);
                     }
                 }
 
                 //https://devrel-ga-13054.api.identitynow-demo.com/beta/sources/0e1fcbb123cb4424a16db0f1af9fb526/load-accounts
                 int secoundsToDelay = ((1000) * scanPerSecound) ;
                 Console.WriteLine("Processed run #" + runNumber);
+                //Not sure the max int size but no reason to keep it going forever this is just from the console to review results
+                //we troubleshooting ps scripts
+                if (runNumber > 10000)
+                {
+                    runNumber = 0;
+                }
                 await Task.Delay(secoundsToDelay, stoppingToken);
             }
         }
@@ -42,8 +50,11 @@ namespace ISC_AutoLoader
         /// <param name="file">FULL filePath</param>
         /// <param name="appID">Id number of the application</param>
         /// <param name="root"> Folder to start containing the root + the applicationName </param>
-        private void processOneFile(String file, String appID, String root)
+        private void processOneFile(String file, String appID, String root,String appName)
         {
+        
+            
+          
             Boolean skip = false;
             try
             {
@@ -80,6 +91,33 @@ namespace ISC_AutoLoader
                 //TODO any way to check if the file is open?
                 if (skip == false)
                 {
+                    
+                    String psCommand = _userInputs.getStartingFolder() + commandsFolder + "\\" + appName + ".ps1";
+                    Console.WriteLine("checking for preIterate rule");
+                    Console.WriteLine(psCommand);
+                    String now = DateTime.Now.ToString("yyyy-MM-dd--hh--mm");
+                    if (File.Exists(psCommand))
+                    {
+                        PowerShell ps = PowerShell.Create();
+                        Console.WriteLine("Processing Custom PowerShell Script");
+                        IDictionary parm = new Dictionary<String, String>();
+
+                        parm.Add("ApplicationName", appName);
+                        parm.Add("ApplicationID", appID);
+                        parm.Add("rootFolder", root);
+                        parm.Add("fileName", file);
+                        ps.AddScript(File.ReadAllText(psCommand)).AddParameters(parm).Invoke();
+                        String psLog = root + "/response/ps_" + now + ".log";
+                        StreamWriter logWriter = new StreamWriter(psLog, true);
+                        foreach (PSObject psResults in ps.Invoke())
+                        {  
+                            logWriter.WriteLine(psResults.ToString());  
+                        }
+                        logWriter.Flush();
+                        logWriter.Close();
+                        ps.Dispose();
+                    }
+
                     OAuth oAuth = new OAuth();
                     //client.DefaultRequestHeaders.Add("Authorization", "Bearer " + oAuth.getNewToken());
                     String oper = "/load-accounts";
@@ -93,15 +131,21 @@ namespace ISC_AutoLoader
                     Console.WriteLine(url);
                     RestClient client = new RestClient(new RestClientOptions(url));
                     
+                    
                     RestRequest request = new RestRequest(url, Method.Post);
-                    //TODO timeout;
+                    int max = _userInputs.timeout();
+                    if (max != 0)
+                    {
+                        request.Timeout = TimeSpan.FromMinutes(max);
+                    }
+                    
                     request.AddHeader("Authorization", "Bearer " + oAuth.getNewToken());
                     request.AlwaysMultipartFormData = true;
                     request.AddFile("file", file);
                     RestResponse result = client.ExecuteAsync(request).Result;
 
                     Console.WriteLine(result.IsSuccessStatusCode);
-                    String now = DateTime.Now.ToString("yyyy-MM-dd--hh--mm");
+                    now = DateTime.Now.ToString("yyyy-MM-dd--hh--mm");
 
                     if (_userInputs.shouldArchive() == true)
                     {
@@ -131,6 +175,9 @@ namespace ISC_AutoLoader
                         logWriter.Close();
                         File.Delete(file);
                     }
+                    
+                    
+                    client.Dispose();
                 }
                 else
                 {
@@ -178,6 +225,7 @@ namespace ISC_AutoLoader
             String token = auth.getNewToken();
             Console.WriteLine($"{token}");
             Applications apps = new Applications(token);
+            Directory.CreateDirectory(_userInputs.getStartingFolder() + commandsFolder);
 
             foreach (String key in apps.apps.Keys)
             {

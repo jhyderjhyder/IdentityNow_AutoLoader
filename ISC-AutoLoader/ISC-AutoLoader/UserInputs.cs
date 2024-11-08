@@ -5,7 +5,7 @@ namespace ISC_AutoLoader
     public class UserInputs
     {
         public UserInputs() {
-            String configFile = this.startingFolder + "/config.ini";
+            String configFile = this.startingFolder + "\\commands\\config.ini";
             if (File.Exists(configFile))
             {
                 var data = File.ReadLines(configFile);
@@ -37,7 +37,7 @@ namespace ISC_AutoLoader
             }
         
         }
-
+        private String decryptedSecret = null;
         private String url = Environment.GetEnvironmentVariable("ISC_URL");
         private String client_id = Environment.GetEnvironmentVariable("ISC_CLIENT_ID");
         private String client_secret = Environment.GetEnvironmentVariable("ISC_CLIENT_SECRET");
@@ -47,9 +47,26 @@ namespace ISC_AutoLoader
         //TODO extra validation
         public String getUrl(){return "https://" + url;}
         public String getClientId() { return client_id;}
-        public String getClientSecret() { return client_secret;}
+        public String getClientSecret() { 
+            if  (config.ContainsKey("EncryptKey")){
+                if (decryptedSecret == null)
+                {
+                    Encrypt e = new Encrypt(config.ContainsKey("EncryptKey").ToString()) ;
+                    decryptedSecret = e.decrypt(client_secret);
+                }
+                return decryptedSecret;
+
+            }
+            return client_secret;
+        
+        }
         public String getStartingFolder() {  return startingFolder;}
 
+        /// <summary>
+        /// This controls if the system should keep the uploaded
+        /// file on the server
+        /// </summary>
+        /// <returns></returns>
         public Boolean shouldArchive()
         {
             if (config.ContainsKey("archive"))
@@ -63,6 +80,11 @@ namespace ISC_AutoLoader
                 return true;
             
         }
+        /// <summary>
+        /// As you want to give your filesystem a break depending on what
+        /// you are trying to do with it.  This should 
+        /// </summary>
+        /// <returns></returns>
         public int scanPerSecond()
         {
             if (config.ContainsKey("delayScanPerSecond"))
@@ -112,5 +134,23 @@ namespace ISC_AutoLoader
             return list;
         }
 
+        public int timeout()
+        {
+            if (config.ContainsKey("restTimeOut"))
+            {
+                try
+                {
+                    String details = config["restTimeOut"];
+                    int result = Int32.Parse(details);
+                    return result;
+                }
+                catch (Exception e)
+                {
+                    Console.WriteLine(e.ToString());
+                }
+
+            }
+            return 0;
+        }
     }
 }

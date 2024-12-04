@@ -4,7 +4,8 @@ namespace ISC_AutoLoader
 {
     public class UserInputs
     {
-        public UserInputs() {
+        public UserInputs()
+        {
             String configFile = this.startingFolder + "\\commands\\config.ini";
             if (File.Exists(configFile))
             {
@@ -14,7 +15,8 @@ namespace ISC_AutoLoader
                     if (!line.StartsWith("#") && line.Contains("="))
                     {
                         var lineData = line.Split('=');
-                        if (lineData.Length <= 2){
+                        if (lineData.Length <= 2)
+                        {
                             String key = lineData[0].Trim();
                             String value = lineData[1];
                             if (!config.ContainsKey(key))
@@ -23,8 +25,8 @@ namespace ISC_AutoLoader
                             }
                         }
                     }
-                        
-                        
+
+
                 }
             }
             else
@@ -35,32 +37,34 @@ namespace ISC_AutoLoader
                 logWriter.Flush();
                 logWriter.Close();
             }
-        
+
         }
         private String decryptedSecret = null;
         private String url = Environment.GetEnvironmentVariable("ISC_URL");
         private String client_id = Environment.GetEnvironmentVariable("ISC_CLIENT_ID");
         private String client_secret = Environment.GetEnvironmentVariable("ISC_CLIENT_SECRET");
         private String startingFolder = Environment.GetEnvironmentVariable("ISC_FOLDER");
-        public Dictionary<String,String> config = new Dictionary<String,String>();
+        public Dictionary<String, String> config = new Dictionary<String, String>();
 
         //TODO extra validation
-        public String getUrl(){return "https://" + url;}
-        public String getClientId() { return client_id;}
-        public String getClientSecret() { 
-            if  (config.ContainsKey("EncryptKey")){
+        public String getUrl() { return "https://" + url; }
+        public String getClientId() { return client_id; }
+        public String getClientSecret()
+        {
+            if (config.ContainsKey("EncryptKey"))
+            {
                 if (decryptedSecret == null)
                 {
-                    Encrypt e = new Encrypt(config.ContainsKey("EncryptKey").ToString()) ;
+                    Encrypt e = new Encrypt(config.ContainsKey("EncryptKey").ToString());
                     decryptedSecret = e.decrypt(client_secret);
                 }
                 return decryptedSecret;
 
             }
             return client_secret;
-        
+
         }
-        public String getStartingFolder() {  return startingFolder;}
+        public String getStartingFolder() { return startingFolder; }
 
         /// <summary>
         /// This controls if the system should keep the uploaded
@@ -77,8 +81,8 @@ namespace ISC_AutoLoader
                     return false;
                 }
             }
-                return true;
-            
+            return true;
+
         }
         /// <summary>
         /// As you want to give your filesystem a break depending on what
@@ -95,14 +99,14 @@ namespace ISC_AutoLoader
                     int result = Int32.Parse(details);
                     return result;
                 }
-                catch(Exception e)
+                catch (Exception e)
                 {
                     Console.WriteLine(e.ToString());
                 }
-               
+
             }
-            
-             
+
+
             return 60;
         }
 
@@ -117,7 +121,7 @@ namespace ISC_AutoLoader
                     var apps = details.Split(",");
                     foreach (String app in apps)
                     {
-                        var test  = app.Trim();
+                        var test = app.Trim();
                         if (!list.Contains(test))
                         {
                             list.Add(test);
@@ -152,5 +156,20 @@ namespace ISC_AutoLoader
             }
             return 0;
         }
+
+
+        public Boolean allSources()
+        {
+            if (config.ContainsKey("allSources"))
+            {
+                String details = config["allSources"];
+                if (details.ToLower().Equals("true"))
+                {
+                    return true;
+                }
+            }
+            return false;
+
+        }
     }
-}
+    }

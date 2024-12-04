@@ -42,7 +42,7 @@ namespace ISC_AutoLoader
                 foreach (SailPointApp app in appList){
                     Console.WriteLine(app.id + ":" + app.name + ":" + app.type);
                     //TODO should we have more than this or a filter?
-                    if (app.type.Equals("DelimitedFile"))
+                    if (ui.allSources()==true ||  app.type.Equals("DelimitedFile"))
                     {
                         if (limit.Count == 0) {
                             if (!apps.ContainsKey(app.name))

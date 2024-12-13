@@ -27,4 +27,4 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: Release
-          path: ./ISC-AutoLoader/ISC-AutoLoader/bin/net8.0/publish/
+          path: ./ISC-AutoLoader/ISC-AutoLoader/bin/Release/net8.0/publish/

@@ -62,14 +62,17 @@ A config.ini file will be created.  This will contain optional configuration.  I
 archive=false
 # System will scan upload and then rest.  In general this should be 60 as thats a min but in testing you can drop this or increase as you need
 delayScanPerSecond=3
-# If you only want a subset of the applications instead of all delimited apps
-limitList=Badging, ISC Admins
+
 # The project checks for new files by default ever 60 Seconds and then gives your filesystem a rest and rescans.  You can alter this number as you need
 delayScanPerSecond=120
 # I dont know much about this as I have not tried very big files but if you get timeouts try updating this number in Minutes
 restTimeOut=10
 #Basic encryption if you dont want to store the ISC_CLIENT_SECRET in plan text
 EncryptKey=b14ca5898a4e4133bbce2ea2315a1916
+# By default it will only allow for delimited file connections but if you need to bring in all sources for things like entitlement uploads you can add a true statement.  If you have limitList and true limitList takes priority.
+allSources=true
+# If you only want a subset of the applications instead of all delimited apps
+limitList=Badging, ISC Admins
 ``` 
 
 ## Optional File Locking

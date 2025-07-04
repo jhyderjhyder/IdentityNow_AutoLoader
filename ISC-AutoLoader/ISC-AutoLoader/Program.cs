@@ -6,7 +6,7 @@ foreach (var arg in Environment.GetCommandLineArgs())
 {
     if (arg.ToLower().Equals("-v"))
     {
-        Console.WriteLine("Version 11-07-2024");
+        Console.WriteLine("Version 07-04-2025");
         Environment.Exit(0);
     }
     if (arg.ToLower().Equals("-e"))

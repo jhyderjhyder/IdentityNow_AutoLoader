@@ -200,23 +200,47 @@ namespace ISC_AutoLoader
 
         private void validate()
         {
-            if (_userInputs.getUrl() == null)
+            if (_userInputs.getUrl().Equals("https://"))
             {
-                Console.WriteLine("ISC_URL is required");
+                Console.WriteLine("ISC_URL is required example demo.api.identitynow.com");
+                SetupHelper sh = new SetupHelper();
+                String data = Console.ReadLine();
+                String command = $"setx ISC_URL {data} /m";
+                sh.runCommand(command);
+              
             }
             if (_userInputs.getClientId() == null)
             {
                 Console.WriteLine("ISC_CLIENT_ID is required");
+                SetupHelper sh = new SetupHelper();
+                String data = Console.ReadLine();
+                String command = $"setx ISC_CLIENT_ID {data} /m";
+                sh.runCommand(command);
+            }
+            if (_userInputs.getClientSecret() == null)
+            {
+                Console.WriteLine("ISC_CLIENT_SECRET  is required");
+                SetupHelper sh = new SetupHelper();
+                String data = Console.ReadLine();
+                String command = $"setx ISC_CLIENT_SECRET  {data} /m";
+                sh.runCommand(command);
             }
             if (_userInputs.getStartingFolder() == null)
             {
-                Console.WriteLine("ISC_FOLDER is required");
+                Console.WriteLine("ISC_FOLDER is required c:\\upload");
+                SetupHelper sh = new SetupHelper();
+                String data = Console.ReadLine();
+                String command = $"setx ISC_FOLDER {data} /m";
+                sh.runCommand(command);
 
             }
             if (!Directory.Exists(_userInputs.getStartingFolder()))
             {
-                throw new Exception("Folder not found:" + _userInputs.getStartingFolder());
+                Console.WriteLine("Folder not found you must create this folder and set good file permissions:" + _userInputs.getStartingFolder());
+                Environment.Exit(0);
             }
+           
+            
         }
         public FileScanner()
         {

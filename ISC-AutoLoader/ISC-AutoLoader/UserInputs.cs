@@ -6,6 +6,15 @@ namespace ISC_AutoLoader
     {
         public UserInputs()
         {
+            String commandPath = this.startingFolder + "\\commands\\";
+            if (!Directory.Exists(commandPath))
+            {
+                Directory.CreateDirectory(commandPath);
+                var nf = File.Create(commandPath + "\\config.ini");
+                nf.Close();
+
+                Console.WriteLine("Please setup the config.ini file with proper conditons for your system");
+            }
             String configFile = this.startingFolder + "\\commands\\config.ini";
             if (File.Exists(configFile))
             {
@@ -51,7 +60,7 @@ namespace ISC_AutoLoader
         public String getClientId() { return client_id; }
         public String getClientSecret()
         {
-            if (config.ContainsKey("EncryptKey"))
+            if (client_secret!=null && config.ContainsKey("EncryptKey"))
             {
                 if (decryptedSecret == null)
                 {

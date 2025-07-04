@@ -17,6 +17,7 @@ namespace ISC_AutoLoader
             String singlePost = ui.getUrl() + "/oauth/token?grant_type=" + grant_type + "&client_id=" + ui.getClientId() + "&client_secret=" + ui.getClientSecret();
             HttpClient client = new HttpClient();
             var response = client.PostAsync(singlePost, null).Result;
+            Console.WriteLine("httpToken Status" + response.StatusCode);
             String json = response.Content.ReadAsStringAsync().Result;
             TokenObject token = JsonConvert.DeserializeObject<TokenObject>(json);  
             return token.access_token;
